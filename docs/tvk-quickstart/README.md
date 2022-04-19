@@ -1,219 +1,134 @@
 # TrilioVault for Kubernetes tvk-quickstart plugin
 
-**tvk-quickstart** is a kubectl plugin which installs TrilioVault for Kuberentes (TVK), configures UI, creates target and run some sample backup/reson TrilioVault for Kuberentes (TVK).
-It installs the TVK Operator, the TVM Application, configures the TVK Management Console, creates NFS/s3 target and executes sample backup and restore operations.
-This plugin is tested on OCP,RKE,GKE,DO kubernetes clusters.
+The tvk-quickstart kubectl plugin is tested with OCP, RKE, GKE, and DO Kubernetes clusters. The plugin achieves the following:
+
+- Installs TrilioVault for Kubernetes (TVK) - TVK Operator and TVM Application
+- Configures the TVK Management Console (UI)
+- Creates a target (NFS or S3)
+- Executes sample backup and restores TVK operations
 
 ## Pre-requisites:
 
-1. All the prerequisites that are required for TVK installation.[refer](https://docs.trilio.io/kubernetes/getting-started-3/getting-started/install-and-configure)
-2. S3cmd. Install from [here](https://s3tools.org/s3cmd)
-3. yq(version >= 4). Information can be found @[here](https://github.com/mikefarah/yq) 
-4. oc, if running for OCP cluster - Install from here [here](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/)
+1. All pre-requisites for the TVK installation can be found [here](https://docs.trilio.io/kubernetes/use-triliovault/installing-triliovault#prerequisites-for-triliovault-for-kubernetes).
+2. Install S3cmd. from [here](https://s3tools.org/s3cmd).
+3. yq must be version 4 or above. Refer to [here](https://github.com/mikefarah/yq) for further information.
+4. oc is required if running against OCP cluster - Install oc from [here](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/).
+5. Linux or macOS are supported. Windows is not supported at this time.
 
-**Supported OS and Architectures**:
+## What is Executed by the tvk-quickstart?
 
-OS:
-- Linux
-- darwin
-
-
-## tvk-quickstart plugin performs the following tasks:
-
-- Preflight check:
-	Performs preflight checks to ensure that all requirements are satisfied.
-- **TVK Installation**:
-	**Installs TVK along with TVM and does License installation** 
-- TVK Management Console Configuration:
-        Even after above configuation, users has an option to choose from ['Loadbalancer','Nodeport','PortForwarding'] to access the console using tvk-quickstart plugin.
-- Target Creation:
-	Creates and validate the target where backups are stored. Users can create S3 (DigitalOCean Spaces / AWS S3) or NFS based target.  
-- Run Sample Tests of Backup and Restore:
-        Run sample tests for ['Label_based','Namespace_based','Operator_based','Helm_based'] applications. By default, 'Label_based' backup tests are run against a MySQL Database application, 'Namespace_based' tests against a Wordpress application, 'Operator_based' tests against MySQL Database operator application,'Helm_based' tests against a Mongo Database helm based application.
+1. **Preflight check**: Performs prerequisite checks to ensure that all TVK requirements are satisfied.
+2. **TVK Installation**: Installs TVK, TVM (UI), and free trial license.
+3. **TVK Management Console Configuration**: Configures control access to the UI. Users can choose either Loadbalancer, Nodeport, or PortForwarding.
+4. **Target Creation**: Creates and validates the target storage for storing backup images. Users can create an S3 (DigitalOCean Spaces / AWS S3) or an NFS-based target.
+5. **Run Backup and Restore of Sample Applications**: Run sample tests for a label, namespace, operator, and helm-based applications. By default, backups and restores are performed against:
+   - Label-based MySQL Database application
+   - Namespace-based WordPress application
+   - Operator-based MySQL Database
+   - Helm-based MongoDB based application
 
 
-## Installation, Upgrade, Removal of Plugins :
+## Installation, Upgrade, and Removal of tvk-quickstart kubectl Plugin
+Krew is the plugin manager for `kubectl` command-line tool. The tvk-quickstart installation can be executed with or without krew installed, but installion with krew is recommended. However, if there are any issues with your installation of krew, then you may still install the tvk-quickstart kubectl plugin without krew.
 
-#### 1. With `krew`:
+### Using krew
 
-- Add TVK custom plugin index of krew:
+| Action                                       | Command   
+| :------------------------------------------  |:-------------
+| Add the TVK custom plugin index of krew      | `kubectl krew index add tvk-interop-plugin` https://github.com/trilioData/tvk-interop-plugins.git
+| Perform the installation                     | `kubectl krew install tvk-interop-plugin/tvk-quickstart`
+| Upgrade the tvk-quickstart plugin            | `kubectl krew upgrade tvk-quickstart`
+| Upgrade the tvk-quickstart plugin            | `kubectl krew uninstall tvk-quickstart`
 
-  ```
-  kubectl krew index add tvk-interop-plugin https://github.com/trilioData/tvk-interop-plugins.git
-  ```
+### Without krew
 
-- Installation:
+If the krew plugin manager is not an option, you may still install the tvk-quickstart kubectl plugin without krew using the following steps.
 
-  ```
-  kubectl krew install tvk-interop-plugin/tvk-quickstart
-  ```  
+1. List of available releases: https://github.com/trilioData/tvk-interop-plugins/releases.
+2. Choose a version of the tvk-quickstart plugin to install and check if release assets have a tvk-quickstart plugins package[tvk-quickstart.tar.gz].
+3. Set env variable `version=[TVK_QS_VERSION]`. If the `version` is not exported, then the `latest` tagged version will be considered.
+4. Run this Bash or ZSH shells command to download and install tvk-quickstart without krew
 
-- Upgrade:
+   ```bash
+   (
+     set -ex; cd "$(mktemp -d)" &&
+     if [[ -z ${TVK_QS_VERSION} ]]; then TVK_QS_VERSION=$(curl -s https://api.github.com/repos/trilioData/tvk-interop-plugins/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")'); fi &&
+   echo "Installing version=${TVK_QS_VERSION}" &&
+   curl -fsSLO "https://github.com/trilioData/tvk-interop-plugins/releases/download/"${TVK_QS_VERSION}"/tvk-quickstart.tar.gz" &&
+   tar zxvf tvk-quickstart.tar.gz && sudo mv tvk-quickstart/tvk-quickstart /usr/local/bin/kubectl-tvk_quickstart
+   )
+   ```
+5. Verify installation using the command: `kubectl tvk-quickstart --help`
 
-  ```
-  kubectl krew upgrade tvk-quickstart
-  ```  
-
-- Removal:
-
-  ```
-  kubectl krew uninstall tvk-quickstart
-  ```
-
-#### 2. Without `krew`:
-
-1. List of available releases: https://github.com/trilioData/tvk-interop-plugins/releases
-2. Choose a version of preflight plugin to install and check if release assets have preflight plugin's package[tvk-quickstart.tar.gz]
-3. Set env variable `version=v1.x.x` [update with your desired version]. If `version` is not exported, `latest` tagged version
-   will be considered.
-
-##### Linux/macOS
-
-- Bash or ZSH shells
-```bash
-(
-  set -ex; cd "$(mktemp -d)" &&
-  if [[ -z ${version} ]]; then version=$(curl -s https://api.github.com/repos/trilioData/tvk-interop-plugins/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")'); fi &&
-  echo "Installing version=${version}" &&
-  curl -fsSLO "https://github.com/trilioData/tvk-interop-plugins/releases/download/"${version}"/tvk-quickstart.tar.gz" &&
-  tar zxvf tvk-quickstart.tar.gz && sudo mv tvk-quickstart/tvk-quickstart /usr/local/bin/kubectl-tvk_quickstart
-)
-```
-Verify installation with `kubectl tvk-quickstart --help`
-
-##### Windows
-NOT SUPPORTED
-
-
-## Usage
-
-There are two way to use the tvk-quickstart plugin:
+## Modes of Operation
+There are two modes to use the tvk-quickstart plugin:
 1. Interactive
 2. Non-interactive
 
 
-## Ways to execute the plugin
+### Interactive
 
-**1. Interactive**:
-        The plugin asks for various inputs that enable it to perform installation and deployment operations. 
-        For interactive installation of TVK operator and manager, configure TVK UI, create a target and run sameple backup restore, run below command:
-
-kubectl tvk-quickstart [options] 
-
-Flags:
+1. For interactive installation of TVK operator and manager, configure the TVK UI, create a target and run a sample backup restore, using the command: `kubectl tvk-quickstart [options]`
+2. During interactive execution, the user is prompted for input for various options that enable the plugin to perform installation and deployment operations. Use the information provided in the following table to guide you in these options:       
 
 | Parameter                     | Description   
-| :---------------------------- |:-------------:
-| -n, --noninteractive          | Run script in non-interactive mode.for this you need to provide config file
-| -i, --install_tvk             | Installs TVK and it's free trial license.
-| -c, --configure_ui            | Configures TVK UI.
-| -t, --target                  | Create Target for backup and restore jobs
-| -s, --sample_test		| Create sample backup and restore jobs
-| --preflight		        | Checks if all the pre-requisites are satisfied
+| :---------------------------- |:-------------
+| -i, --install_tvk             | Installs TVK and its free trial license. TVK will be installed as upstream operator. A cluster scope TVM custom resource triliovault-manager is also created.
+| -c, --configure_ui            | Configures the TVK UI. This option will only work if the cluster has TVM application installed.
+| -t, --target                  | Creates target for backup and restore jobs.
+| -s, --sample_test		| Creates sample backup and restore jobs.
+| -p, --preflight	        | Checks if all the TVK pre-requisites are satisfied
 
-```shell script
-kubectl tvk-quickstart -i -c -t -s
-```
+A user may specify more than one option with each tvk-quickstart execution. For example, to install, configure, create a target and run samples quickly, execute the following single command:_ `kubectl tvk-quickstart -i -c -t -s`
 
-**2. Non-interactive**:
-	tvk-quickstart can be executed in a non-interactive method by leveraging values from an input_config file. To use the plugin in a non-interactive way, create an input_config (https://github.com/trilioData/tvk-interop-plugins/blob/main/tests/tvk-quickstart/input_config) file. After creating the input config file, run the following command to execute the plugin in a non-interactive fashion. The non-interative method will perform preflight checks, installation, configuration (Management Console and Target) as well as run sample backup and restore tests similar to the interactive mode but in a single workflow.
+###Non-interactive###
+In non-interactive mode, tvk-quickstart performs all operations; preflight checks, installation, UI configuration, and runs sample backup and restore tests.  However, all the user input is provided in a configuration file. Use the following steps to invoke tvk-quickstart in the non-interactive mode:
 
-Sample input_config file can be found here:
-https://github.com/trilioData/tvk-interop-plugins/blob/main/tests/tvk-quickstart/input_config
+1. Create an `input_config` file, using the sample [input_config file](https://github.com/trilioData/tvk-interop-plugins/blob/main/tests/tvk-quickstart/input_config) as a template. The non-interactive mode leverages values in the `input_config` file.
+2. Edit any variables in the configuration file.  Each variable description and the possible values of the variable is described in the following table.
+3. Run the following command to execute the plugin in a non-interactive method: `kubectl tvk-quickstart -n` 
+4. The user is now prompted to provide the path of the `input_config` file.
 
-This sample_config input file leverages your credentials and DNS information to create/configure a target, and to configure the management console leveraging a Kubernetes LoadBalancer.
+## Parameters For `input_config`
 
-```shell script
-kubectl tvk-quickstart -n
-```
-
-## 'input_config' /input parameter details
-
-- **PREFLIGHT**:
-	This parameter is to check whether or not preflight should be executed.It accepts one of the value from [True, False]
-	More info around this can be found @[here](https://github.com/trilioData/tvk-plugins/tree/main/docs/preflight)
-- **proceed_even_PREFLIGHT_fail**:
-	This option is dependent of PREFLIGHT execution.If a user wish to proceed even if few checks failed in preflight execution, user need to set this variable to y/Y. This variable accepts one of the value from [Y,y,n,N].
-- **TVK_INSTALL**:
-	This parameter is to check whether or not TVK should be installed.It accepts one of the value from [True, False]
-- **CONFIGURE_UI**:
-	This parameter is to check whether or not TVK UI should be configured.It accepts one of the value from [True, False]
-- **TARGET**:
-	This parameter is to check whether or not TVK Target should be created.It accepts one of the value from [True, False]
-	***Note***: Target type "Readymade_Minio" requires 4GB per node, else the target creation will fail.
-- **SAMPLE_TEST**: 
-	This parameter is to check whether or not sample test should be executed.It accepts one of the value from [True, False]
-- **storage_class**:
-	This parameter expects storage_class name which should be used across plugin execution. If kept empty, the storage_class annoted with 'default' label would be considered. If there is no such class, the plugin would likely fail.
-- **operator_version**:
-	This parameter expects user to specify the TVK operator version to install as a part of tvk installation process.
-	The compatibility/bersion can be found @[here](https://docs.trilio.io/kubernetes/use-triliovault/compatibility-matrix#triliovaultmanager-and-tvk-application-compatibility). If this parameter is empty, by default TrilioVault operator version  2.1.0 will get installed.
-- **triliovault_manager_version**:
-	This parameter expects user to specify the TVK manager version to install as a part of tvk installation process.
-        The compatibility/bersion can be found @[here](https://docs.trilio.io/kubernetes/use-triliovault/compatibility-matrix#triliovaultmanager-and-tvk-application-compatibility). If this parameter is empty, by default TrilioVault operator version  2.1.0 will get installed.
-- **tvk_ns**:
-	This parameter expects user to specify the namespace in which user wish tvk to get installed in.
-- **if_resource_exists_still_proceed**:
-	This parameter is to check whether plugin should proceed for other operationseven if resources exists.It accepts one of the value from [Y,y,n,N]
-- **ui_access_type**:
-	Specify the way in which TVK UI should be configured. It accepts one of the value from ['Loadbalancer','Nodeport','PortForwarding']
-- **domain**:
-	The value of this parameter is required when 'ui_access_type == Loadbalancer'.Specify the domain name which has been registered with a registrar and under which you wish to create record in. More info around this parameter can be found @[here](https://docs.digitalocean.com/products/networking/dns/)
-- **tvkhost_name**:
-	The value of this parameter is required when 'ui_access_type == Loadbalancer OR ui_access_type == Nodeport'. The value of this parameter will be the hostname by which the TVK management console will be accessible through a web browser.
-- **cluster_name**:
-	The value of this parameter is required when 'ui_access_type == Loadbalancer OR ui_access_type == Nodeport'. If kept blank, the active cluster name will be taken.
-- **vendor_type**:
-	The value of this parameter is required to create target. Specify the vendor name under which target needs to be created. Currently supported value is one for the ['Digital_Ocean','Amazon_AWS']
-- **doctl_token**:
-	The value of this parameter is required to create target. Specify the token name to authorize user.A token that allows it to query and manage DO account details and resources for user.
-- **target_type**:
-	Target is a location where TrilioVault stores backup.Specify type of target to create.It accepts one of the value from ['NFS','S3']. More information can be found @[here](https://docs.trilio.io/kubernetes/getting-started/getting-started-1#step-2-create-a-target)
-- **access_key**:
-	This parameter is required when 'target_type == S3'.This is used for bucket S3 access/creation. The value should be consistent with the vendor_type you select.
-- **secret_key**:
-	This parameter is required when 'target_type == S3'.This is used for bucket S3 access/creation. The value should be consistent with the vendor_type you select.
-- **host_base**:
-	This parameter is required when 'target_type == S3'.specify the s3 endpoint for the region your Spaces/Buckets are in.
-	More information can be found @[here](https://docs.digitalocean.com/products/spaces/resources/s3cmd/#enter-the-digitalocean-endpoint)
-- **host_bucket**:
-	The value of this parameter should be URL template to access s3 bucket/spaces.This parameter is required when 'target_type == S3'.
-	Generally it's value is '%(bucket)s.<value of host_base>' . This is the URL to access the bucket/space.
-- **gpg_passphrase**:
-	This parameter is for an optional encryption password. Unlike HTTPS, which protects files only while in transit, GPG encryption prevents others from reading files both in transit and while they are stored.  More information can be found @[here](https://docs.digitalocean.com/products/spaces/resources/s3cmd/#optional-set-an-encryption-password)
-- **bucket_location**:
-	Specify the location where the s3 bucket for target should be created. This parameter is specific to AWS vendor_type.The value can be one from ['us-east-1', 'us-west-1', 'us-west-2', 'eu-west-1', 'eu-central-1', 'ap-northeast-1', 'ap-southeast-1', 'ap-southeast-2', 'sa-east-1'].
-- **bucket_name**:
-	Specify the name for the bucket to be created or looked for target creation.
-- **target_name**:
-	Specify the name for the target that needs to be created.
-- **target_namespace**:
-	Specify the namespace name in which target should be created in. User should have permission to create/modify/access the namespace.
-- **nfs_server**:
-	The server Ip address or the fully qualified nfs server name. This paramere is required when 'target_type == NFS'
-- **nfs_path**:
-	Specify the exported path which can be mounted for target creation. This paramere is required when 'target_type == NFS'
-- **nfs_options**:
-	Specify if any other NFS option needs to be set. Additional values for the nfsOptions field can be found @[here](https://docs.trilio.io/kubernetes/architecture/apis-and-command-line-reference/custom-resource-definitions-application-1#triliovault.trilio.io/v1.NFSCredentials)
-- **thresholdCapacity**:
-	Capacity at which the IO operations are performed on the target.Units supported - [Mi,Gi,Ti]
-- **bk_plan_name**:
-	Specify the name for backup plan creation for the sample application. Default value is 'trilio-test-backup'.
-- **bk_plan_namespace**:
-	Specify the namespace in which the application should get installed and the backup plan will get created. Default value is 'trilio-test-backup'.
-- **backup_name**:
-	 Specify the name for backup to be created for the sample application. Default value is 'trilio-test-backup'.
-- **backup_namespace**:
-	Specify the namespace in which backup should get created. Default value is 'trilio-test-backup'.
-- **backup_way**:
-	Specify the way in which backup should be taken.Supported values  ['Label_based','Namespace_based','Operator_based','Helm_based'].
-	For Label_based, MySQL application would be installed and sample backup/restore will be showcased.
-	For Namespace_based, Wordpress application would be installed and sample backup/restore will be showcased.
-	For Operator_based, MySQL operator  would be installed and sample backup/restore will be showcased.
-	For Helm_based, Mongodb  application would be installed and sample backup/restore will be showcased.
-- **restore**:
-	Specify whether or not restore should be executed. Allowed values are one from the  [True, False] list.
-- **restore_name**:
-	Specify the name for the restore. Default value is 'tvk-restore'.
-- **restore_namespace**:
-	Specify the namespace in which backup should be restored. Default value is 'tvk-restore'.
+| input-config Parameter            | Description   
+| :-------------------------------- |:-------------
+| PREFLIGHT                         | This parameter checks whether or not preflight should be executed. It accepts one of the following values: [True, False]. More info around this can be found [here](https://github.com/trilioData/tvk-plugins/tree/main/docs/preflight)
+| proceed_even_PREFLIGHT_fail       | This option is dependent of PREFLIGHT execution. If the user wishes to proceed despite checks failing in preflight execution, this variable must be set to y/Y. This variable accepts one of the following values [Y,y,n,N].
+| TVK_INSTALL                       | Set this option to True to install TVK and TVM. Otherwise, set this value to False.
+| CONFIGURE_UI                      | This parameter is to check whether or not TVK UI should be configured. It accepts one of the value from [True, False]
+| TARGET		            | This parameter is to check whether or not TVK Target should be created. It accepts one of the value from [True, False]. ***Note***: Target type "Readymade_Minio" requires 4GB per node, else the target creation will fail.
+| SAMPLE_TEST		            | This parameter is to check whether or not sample test should be executed. It accepts one of the value from [True, False]
+| storage_class		            | This parameter expects storage_class name which should be used across plugin execution. If kept empty, the storage_class annoted with 'default' label would be considered. If there is no such class, the plugin would likely fail.
+| operator_version		    | This parameter requires the user to specify the TVK operator version to install as a part of tvk installation process. The compatibility/version can be found [here](https://docs.trilio.io/kubernetes/use-triliovault/compatibility-matrix#triliovaultmanager-and-tvk-application-compatibility). If this parameter is empty, by default TrilioVault operator version  2.1.0 will get installed.
+| triliovault_manager_version       | This parameter requires the user to specify the TVK manager version to install as a part of tvk installation process. The compatibility/version can be found [here](https://docs.trilio.io/kubernetes/use-triliovault/compatibility-matrix#triliovaultmanager-and-tvk-application-compatibility). If this parameter is empty, by default TrilioVault operator version  2.1.0 will get installed.
+| tvk_ns 		            | This parameter requires the user to specify the namespace in which tvk is to be installed.
+| if_resource_exists_still_proceed  | This parameter is to check whether the plugin should proceed for other operations, even if resources exists. It accepts one of the value from [Y,y,n,N]
+| ui_access_type		    | Specify the way in which TVK UI should be configured. It accepts one of the value from ['Loadbalancer','Nodeport','PortForwarding']
+| domain        		    | The value of this parameter is required when 'ui_access_type == Loadbalancer'. Specify the domain name which has been registered with a registrar and in which you wish to create a record. More information about this parameter can be found [here](https://docs.digitalocean.com/products/networking/dns/).
+| tvkhost_name 		            | The value of this parameter is required when 'ui_access_type == Loadbalancer OR ui_access_type == Nodeport'. The value of this parameter is the hostname via which the TVK management console will be accessible using a web browser.
+| cluster_name		            | The value of this parameter is required when 'ui_access_type == Loadbalancer OR ui_access_type == Nodeport'. If kept blank, the active cluster name will be used.
+| vendor_type		            | The value of this parameter is required to create a target. Specify the vendor name under which the target must be created. Currently supported value is for ['Digital_Ocean','Amazon_AWS'].
+| doctl_token		            | Digital Ocean API token, which the user can generate in the control panel [here](https://cloud.digitalocean.com/account/api/tokens) for user authentication.
+| target_type		            | Target is a location where TrilioVault stores backup. Specify the type of target to create. It accepts one of the values from ['NFS','S3']. More information can be found [here](https://docs.trilio.io/kubernetes/getting-started/getting-started-1#step-2-create-a-target).
+| access_key		            | This parameter is required when 'target_type == S3'. This is used for bucket S3 access/creation. The value should be consistent with the vendor_type that you select.
+| secret_key		            | This parameter is required when 'target_type == S3'. This is used for bucket S3 access/creation. The value should be consistent with the vendor_type that you select.
+| host_base		            | This parameter is required when 'target_type == S3'. Specify the s3 endpoint for the region that your Spaces/Buckets are in. More information can be found [here](https://docs.digitalocean.com/products/spaces/resources/s3cmd/#enter-the-digitalocean-endpoint).
+| host_bucket		            | The value of this parameter should be a URL template to access s3 bucket/spaces. This parameter is required when 'target_type == S3'. Generally its value is '%(bucket)s.<value of host_base>' . This is the URL to access the bucket/space.
+| gpg_passphrase		    | This parameter is for an optional encryption password. Unlike HTTPS, which protects files only while in transit, GPG encryption prevents others from reading files both in transit and when they are stored.  More information can be found @[here](https://docs.digitalocean.com/products/spaces/resources/s3cmd/#optional-set-an-encryption-password).
+| bucket_location		    | Specify the location where the s3 bucket for the target should be created. This parameter is specific to AWS vendor_type. The value can be one of the follwing: ['us-east-1', 'us-west-1', 'us-west-2', 'eu-west-1', 'eu-central-1', 'ap-northeast-1', 'ap-southeast-1', 'ap-southeast-2', 'sa-east-1'].
+| bucket_name		            | The name that a user wants to give to a bucket for target creation.
+| target_name		            | Specify the name for the target that needs to be created.
+| target_namespace		    | Specify the name of the namespace in which the target should be created in. The user must have permission to create, modify, and access the namespace.
+| nfs_server		            | The server IP address or the fully qualified nfs server name for NFS target creation.
+| nfs_path		            | Specify the exported path which can be mounted for target creation. This parameter is required when 'target_type == NFS'.
+| nfs_options		            | Specify if any other NFS option needs to be set. Additional values for the nfsOptions field can be found [here](https://docs.trilio.io/kubernetes/architecture/apis-and-command-line-reference/custom-resource-definitions-application-1#triliovault.trilio.io/v1.NFSCredentials).
+| thresholdCapacity		    | Capacity at which the IO operations are performed on the target. Units supported - [Mi,Gi,Ti]
+| bk_plan_name		            | Specify the name for backup plan creation for the sample application. Default value is 'trilio-test-backup'.
+| bk_plan_namespace		    | Specify the namespace in which the application should be installed and in which the backup plan will be created. The default value is 'trilio-test-backup'.
+| backup_name		            | Specify the name for the backup which will be created for the sample application. The default value is 'trilio-test-backup'.
+| backup_namespace		    | Specify the namespace in which the backup should be created. The default value is 'trilio-test-backup'.
+| backup_way		            | Specify the way in which the backup should be taken. Supported values are as follows: ['Label_based','Namespace_based','Operator_based','Helm_based']. For Label_based, the MySQL application is installed and the sample backup/restore will be showcased. For Namespace_based, the WordPress application is installed and the sample backup/restore will be showcased. For Operator_based, MySQL operator is installed and the sample backup/restore will be showcased. For Helm_based, the MongoDB application is installed and the sample backup/restore will be showcased.
+| restore		            | Specify whether or not restore should be executed. Valid values are [True, False].
+| restore_name		            | Specify the name for the restore. The default value is 'tvk-restore'.
+| restore_namespace		    | Specify the namespace in which the backup should be restored. The default value is 'tvk-restore'.
